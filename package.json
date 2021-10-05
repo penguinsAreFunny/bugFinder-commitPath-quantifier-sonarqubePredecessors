@@ -1,6 +1,6 @@
 {
   "name": "bugfinder-commitpath-quantifier-sonarqubepredecessors",
-  "version": "2.8.0",
+  "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
