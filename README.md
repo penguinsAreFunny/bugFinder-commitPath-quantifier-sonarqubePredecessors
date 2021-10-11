@@ -2,8 +2,11 @@
 This package is used as a Quantifier for CommitPaths of the machine learning pipeline of the
 [bugfinder-framework](https://github.com/penguinsAreFunny/bugFinder-framework#readme) or 
 ([npm:bugfinder-framework](https://www.npmjs.com/package/bugfinder-framework)). 
-You can use SonarQube as a Quantifier to quantify your localities of type CommitPath.
-You can define prehooks wich are executed directly after commit checkout.
+You can use SonarQubePredecessors as a Quantifier to quantify your localities of type CommitPath.
+This quantifier uses SonarQube to calculate different metric-values based on SonarQube with consideration of
+n predecessor CommitPaths. Predecessor CommitPaths of a CommitPath x are CommitPaths with the same path as x which
+were made before x.
+You can define prehooks which are executed directly after commit checkout.
 
 # Prerequisites
 You need to begin with understanding the [bugfinder-framework](https://github.com/penguinsAreFunny/bugFinder-framework#readme)
@@ -45,7 +48,7 @@ import {
     BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBE_TYPES,
     SonarQubeConfig,
     SonarQubeMeasurement,
-    SonarQubeQuantifier
+    SonarQubePredecessorsQuantifier
 } from "bugfinder-commitpath-quantifier-sonarqube";
 import {Logger} from "ts-log";
 import {quantifierContainer} from "bugfinder-framework-defaultcontainer";
@@ -77,7 +80,7 @@ const mongoDBConfig: MongoDBConfig = {
 
 // binding quantifier and its dependencies
 container.bind<Quantifier<CommitPath, SonarQubeMeasurement>>(QUANTIFIER_TYPES.quantifier)
-    .to(SonarQubeQuantifier)
+    .to(SonarQubePredecessorsQuantifier)
 container.bind<SonarQubeConfig>(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBE_TYPES.sonarQubeConfig)
     .toConstantValue(sonarQubeConfig);
 container.bind<Logger>(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBE_TYPES.logger).to(FileAndConsoleLogger)
