@@ -65,7 +65,6 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
 
                 const pred = predecessors[i]
                 let measurement: SonarQubeMeasurement = await this.cache.get(pred)
-                src
                 if (measurement == null) {
                     // retry quantification
                     this.logger?.warn(`Missing quantification for locality ${pred.commit.hash} `
