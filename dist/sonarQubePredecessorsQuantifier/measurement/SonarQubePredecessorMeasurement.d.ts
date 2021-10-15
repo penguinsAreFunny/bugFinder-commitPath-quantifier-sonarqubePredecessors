@@ -31,4 +31,6 @@ export declare class SonarQubePredecessorMeasurement {
     minRelDiff: SonarQubeMeasures;
     maxRelDiff: SonarQubeMeasures;
     meanRelDiff: SonarQubeMeasures;
+    qualifier?: string;
+    language?: string;
 }

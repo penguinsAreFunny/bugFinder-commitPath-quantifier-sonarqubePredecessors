@@ -35,9 +35,6 @@ export declare class MaxRelDiffVisitor implements Visitor<number> {
 export declare class MeanRelDiffVisitor implements Visitor<number> {
     visit(element: PredecessorMeasures<number>, result: Measure<number>): void;
 }
-/**
- * @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- *                                           Helper functions
- * @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- */
+export declare function min(array: number[]): number;
+export declare function max(array: number[]): number;
 export declare function mean(array: number[]): number;
