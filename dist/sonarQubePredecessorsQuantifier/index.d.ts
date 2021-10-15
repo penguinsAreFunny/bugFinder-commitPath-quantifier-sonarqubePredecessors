@@ -1,2 +1,2 @@
-export * from "./TYPES";
 export * from "./sonarQubePredecessorsQuantifier";
+export * from "./cache";

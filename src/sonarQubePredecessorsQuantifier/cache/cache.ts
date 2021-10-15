@@ -1,5 +1,5 @@
 import {CommitPath} from "bugfinder-localityrecorder-commitpath";
-import {DB, LocalityMap, WriteMode} from "bugfinder-framework";
+import {DB, LocalityMap, SHARED_TYPES, WriteMode} from "bugfinder-framework";
 import {SonarQubeMeasurement} from "bugfinder-commitpath-quantifier-sonarqube";
 import {inject} from "inversify";
 import {BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES} from "../../TYPES";
@@ -23,7 +23,7 @@ export class RAMCache implements Cache {
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.cacheID)
     cacheID: string
 
-    @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.logger)
+    @inject(SHARED_TYPES.logger)
     logger: Logger
 
     data: LocalityMap<CommitPath, SonarQubeMeasurement>
