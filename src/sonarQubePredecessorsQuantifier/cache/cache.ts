@@ -31,6 +31,12 @@ export class RAMCache implements Cache {
     async init() {
         this.logger?.info("Initializing Cache...")
         this.data = await this.db.readQuantifications(this.cacheID)
+
+        const match = this.data.toArray().filter(el => {
+            return el.key.commit.order == 17448
+        })
+        console.log("Match with order 17448: ")
+        match.forEach(el => { console.log(el.key.commit.order + " " + el.key.path.path)})
     }
 
     async get(locality: CommitPath): Promise<SonarQubeMeasurement> {

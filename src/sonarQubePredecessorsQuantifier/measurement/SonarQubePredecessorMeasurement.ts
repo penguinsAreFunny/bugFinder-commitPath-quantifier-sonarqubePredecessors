@@ -40,6 +40,9 @@ export class SonarQubePredecessorMeasurement {
         this.visitPredecessorMeasures(maxRelDiffVisitor , measurements, this.maxRelDiff)
         this.visitPredecessorMeasures(meanRelDiffVisitor, measurements, this.meanRelDiff)
         // @formatter:on
+
+        this.language = measurements[0].language
+        this.qualifier = measurements[0].qualifier
     }
 
     /**
@@ -72,16 +75,25 @@ export class SonarQubePredecessorMeasurement {
         const predMeasures: PredecessorMeasures<number>[] = []
         // for each SonarQubeMeasures-Property: f.e. cognitiveComplexity, classes, lines, ...
         let i = 0
+
         for (const key in measurements[0].measures) {
             predMeasures[i] = new PredecessorMeasures<number>()
 
-            // push for each measurement the key: f.e. for 5 measurements push the cognitiveComplexity
-            // to predMeasures[cognitiveComplexity]
+            /* push the key for each measurement: f.e. for 5 measurements push the cognitiveComplexity
+               to predMeasures.cognitiveComplexity
+             */
             for (const measurement of measurements) {
+                if (measurement.measures[key] == null || measurement.measures[key].value == null) {
+                    predMeasures[i].measures.push(null)
+                    continue
+                }
                 predMeasures[i].measures.push(measurement.measures[key])
             }
+
             i++
         }
+
+
         return predMeasures
     }
 
@@ -96,4 +108,6 @@ export class SonarQubePredecessorMeasurement {
     maxRelDiff:     SonarQubeMeasures = new SonarQubeMeasures()
     meanRelDiff:    SonarQubeMeasures = new SonarQubeMeasures()
     // @formatter:on
+    qualifier?: string
+    language?: string
 }

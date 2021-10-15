@@ -3,7 +3,7 @@ import {inject, injectable, optional} from "inversify";
 const axios = require("axios");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 import {LocalityMap, Quantifier, SHARED_TYPES} from "bugfinder-framework";
-import {CommitPath, PredecessorsUnique} from "bugfinder-localityrecorder-commitpath";
+import {CommitPath, PredecessorsUnique} from "bugfinder-localityrecorder-commitpath"
 import {Logger} from "ts-log";
 import {Cache} from "./cache";
 import {BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES} from "../TYPES";
@@ -50,14 +50,39 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
         const sonarQubeQuantifications = new LocalityMap<CommitPath, SonarQubeMeasurement>()
         const quantifications = new LocalityMap<CommitPath, SonarQubePredecessorMeasurement>()
 
-        this.logger?.info("Quantifying not quantified localities...")
-        await this.quantifyLocalities(notQuantifiedLocs, sonarQubeQuantifications)
+        this.logger?.info(`Got ${notQuantifiedLocs.length} not quantified localities.`)
+        if (notQuantifiedLocs.length > 0) {
+            this.logger?.info("Quantifying not quantified localities...")
+            await this.quantifyLocalities(notQuantifiedLocs, sonarQubeQuantifications)
+        }
 
         this.logger?.info("Quantifying all localities and their predecessors while using cache...")
-        const missingMeasurements: CommitPath[] = []
+
+
+        // TODO: delete me
+        let x = 0
+        for (const el of (nPredecessorsMap.toArray())) {
+            const predecessors = el.val
+            if (predecessors == null) continue
+
+            for (const pred of predecessors) {
+                const measurement = await this.cache.get(pred)
+                if (measurement == null) {
+                    x++
+                    console.log("Not found in cache: ", pred.commit.order, " ", pred.path.path)
+                }
+            }
+        }
+        console.log("Total not found CPs: ", x)
+        // TODO: delete me bis hier hin
+
         for (const el of (nPredecessorsMap.toArray())) {
             const predecessorsMeasurements = []
             const predecessors = el.val
+            if (predecessors == null) {
+                quantifications.set(el.key, null)
+                continue
+            }
 
             // get all measurements for each predecessor
             for (let i = 0; i < predecessors.length; i++) {
@@ -83,7 +108,7 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
             }
 
             // create SonarQubePredecessorMeasurement from Predecessors-SonarQubeMeasurements
-            const currentCommitPath = predecessors[0]
+            const currentCommitPath = el.key
             const predecessorsMeasurement = new SonarQubePredecessorMeasurement(predecessorsMeasurements)
             quantifications.set(currentCommitPath, predecessorsMeasurement)
 
@@ -165,6 +190,9 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
         for (const loc of localitiesToQuantify) {
 
             const nPredecessors = nPredecessorsMap.getVal(loc)
+            // f.e. upToN = false and there were less than n predecessors.
+            if (nPredecessors == null) continue
+
             for (const predLoc of nPredecessors) {
                 if (this.cache.get(predLoc) == null) {
                     const key = predLoc.key()

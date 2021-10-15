@@ -10,7 +10,7 @@ export interface Element<T> {
  * ending with oldest (lower commit.order)
  */
 export class PredecessorMeasures<T> implements Element<T> {
-    measures: Measure<T>[]
+    measures: Measure<T>[] = []
 
     accept(visitor: Visitor<T>, result: Measure<T>) {
         visitor.visit(this, result)
