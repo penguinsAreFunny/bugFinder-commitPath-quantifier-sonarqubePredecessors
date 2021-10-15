@@ -29,13 +29,12 @@ export class RAMCache implements Cache {
     data: LocalityMap<CommitPath, SonarQubeMeasurement>
 
     async init() {
-        this.logger.info("Initializing Cache...")
+        this.logger?.info("Initializing Cache...")
         this.data = await this.db.readQuantifications(this.cacheID)
     }
 
     async get(locality: CommitPath): Promise<SonarQubeMeasurement> {
-        const measurement = await this.data.getVal(locality)
-        return measurement
+        return this.data.getVal(locality)
     }
 
     async set(locality: CommitPath, measurement: SonarQubeMeasurement) {

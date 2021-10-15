@@ -2,16 +2,17 @@ import {inject, injectable, optional} from "inversify";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const axios = require("axios");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-import {LocalityMap, Quantifier} from "bugfinder-framework";
+import {LocalityMap, Quantifier, SHARED_TYPES} from "bugfinder-framework";
 import {CommitPath, PredecessorsUnique} from "bugfinder-localityrecorder-commitpath";
 import {Logger} from "ts-log";
 import {Cache} from "./cache";
 import {BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES} from "../TYPES";
 import {SonarQubeMeasurement, SonarQubeQuantifier} from "bugfinder-commitpath-quantifier-sonarqube";
+import {SonarQubePredecessorMeasurement} from "./measurement/SonarQubePredecessorMeasurement";
 
 @injectable()
-export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, SonarQubeMeasurement> {
-    @optional() @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.logger)
+export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, SonarQubePredecessorMeasurement> {
+    @optional() @inject(SHARED_TYPES.logger)
     logger: Logger
 
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.cache)
@@ -26,74 +27,70 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.uniqueMode)
     uniqueMode: boolean
 
+    @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.useThisCommitPath)
+    useThisCommitPath: boolean
+
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.sonarQube)
     sonarQube: SonarQubeQuantifier
 
     async quantify(localitiesToQuantify: CommitPath[], allLocalities: CommitPath[])
-        : Promise<LocalityMap<CommitPath, SonarQubeMeasurement>> {
+        : Promise<LocalityMap<CommitPath, SonarQubePredecessorMeasurement>> {
         /**
          * merge all CommitPaths which are in the same commit
          * performance optimization
          * git checkout and SonarQube-quantification is costly therefore only run this process once
          * for each commit
          */
-        this.logger.info("SonarQubePredecessorsQuantifier starting...")
+        this.logger?.info("SonarQubePredecessorsQuantifier starting...")
         await this.cache.init()
 
         // quantify localities not quantified already and write to cache.
         const nPredecessorsMap = this.getNPredecessorsMap(localitiesToQuantify, allLocalities)
         const notQuantifiedLocs = this.getNotQuantifiedLocs(localitiesToQuantify, nPredecessorsMap)
-        const quantifications = new LocalityMap<CommitPath, SonarQubeMeasurement>();
+        const sonarQubeQuantifications = new LocalityMap<CommitPath, SonarQubeMeasurement>()
+        const quantifications = new LocalityMap<CommitPath, SonarQubePredecessorMeasurement>()
 
-        this.logger.info("Quantifying not quantified localities...")
-        await this.quantifyLocalities(notQuantifiedLocs, quantifications)
+        this.logger?.info("Quantifying not quantified localities...")
+        await this.quantifyLocalities(notQuantifiedLocs, sonarQubeQuantifications)
 
-        this.logger.info("Quantifying all localities and their predecessors...")
+        this.logger?.info("Quantifying all localities and their predecessors while using cache...")
         const missingMeasurements: CommitPath[] = []
         for (const el of (nPredecessorsMap.toArray())) {
-            const measurements = []
+            const predecessorsMeasurements = []
             const predecessors = el.val
 
             // get all measurements for each predecessor
-            for (const pred of predecessors) {
+            for (let i = 0; i < predecessors.length; i++) {
+                if (i == 0 && !this.useThisCommitPath) continue
+
+                const pred = predecessors[i]
                 let measurement: SonarQubeMeasurement = await this.cache.get(pred)
+                src
                 if (measurement == null) {
                     // retry quantification
-                    this.logger.warn(`Missing quantification for locality ${pred.commit.hash} `
+                    this.logger?.warn(`Missing quantification for locality ${pred.commit.hash} `
                         + `${pred.path.path}. Retry quantification of locality`)
                     const commit = [{hash: pred.commit.hash, localities: [pred], paths: [pred.path.path]}]
-
-
-
-
-
-
-
-
-
-
-                    // TODO: SonarQube neuste Version nicht installiert, vlt. Framework etc. updaten? Peerdep klappt net?
-                    measurement = await this.sonarQube.quantifyCommit(commit, 0, quantifications)
+                    measurement = (await this.sonarQube.quantifyCommit(commit, 0, sonarQubeQuantifications))[0]
 
                     if (measurement == null) {
-                        this.logger.error("Error: Could not get measurement for " +
+                        // retry failed
+                        this.logger?.error("Error: Could not get measurement for " +
                             `locality ${pred.commit.hash} ${pred.path.path}`)
                         continue
                     }
-                    measurements.push(measurement)
                 }
-
-
+                predecessorsMeasurements.push(measurement)
             }
+
+            // create SonarQubePredecessorMeasurement from Predecessors-SonarQubeMeasurements
+            const currentCommitPath = predecessors[0]
+            const predecessorsMeasurement = new SonarQubePredecessorMeasurement(predecessorsMeasurements)
+            quantifications.set(currentCommitPath, predecessorsMeasurement)
+
         }
-    )
-        await this.quantifyLocalities()
 
-        // TODO: 1. alle Preds für localities holen
-        // TODO: 2. alle Preds die noch nicht quantifiziert wurden in ein array speichern
-        // TODO: 3. alle Cached Preds in LocalityMap speichern, alle übrigens quantifizieren mit unten liegendem code
-        // TODO: 4. Neue quantifizierte Elemente: DB müsste entweder appenden oder Cache muss das übernehmen?
-
+        return quantifications
     }
 
     private async quantifyLocalities(localities: CommitPath[],
@@ -122,28 +119,28 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
             });
         }
 
-        this.logger.info("Total commits: ", commits.length)
+        this.logger?.info("Total commits: ", commits.length)
 
-        this.logger.info("Starting quantifying...")
+        this.logger?.info("Starting quantifying...")
         // quantifying each commit
         for (let i = 0; i < commits.length; i++) {
-            this.logger.info(`Quantifying commit ${i + 1} of ${commits.length}. Hash: ${commits[i].hash}`);
+            this.logger?.info(`Quantifying commit ${i + 1} of ${commits.length}. Hash: ${commits[i].hash}`);
             // check for quantifications in cache
             if (commits[i].paths.length == 0 || commits[i].paths[0] == undefined) {
-                this.logger.info("ignoring commit as no paths are left to quantify for this commit. If you like",
+                this.logger?.info("ignoring commit as no paths are left to quantify for this commit. If you like",
                     "to inject on empty paths see pathsHandling-injections")
                 return
             }
 
             const succeeded = await this.checkCache(commits[i].localities, quantifications)
             if (succeeded) {
-                this.logger.info("Successfully retrieved measurements from cache")
+                this.logger?.info("Successfully retrieved measurements from cache")
                 continue
             }
             const measurements = await this.sonarQube.quantifyCommit(commits, i, quantifications)
 
             commits[i].localities.forEach(locality => {
-                this.logger.info(`Writing measurements for locality ${locality.commit.hash}` +
+                this.logger?.info(`Writing measurements for locality ${locality.commit.hash}` +
                     ` ${locality.path.path} to cache.`)
                 this.cache.set(locality, measurements[i])
             })
@@ -165,10 +162,10 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
 
         // calculate all localities which are not quantified yet
         const locsNotQuantified = new Map<string, CommitPath[]>()
-        for (let i = 0; i < localitiesToQuantify.length; i++) {
-            const loc = localitiesToQuantify[i]
-            const nPredecessors = nPredecessorsMap.getVal(loc)
 
+        for (const loc of localitiesToQuantify) {
+
+            const nPredecessors = nPredecessorsMap.getVal(loc)
             for (const predLoc of nPredecessors) {
                 if (this.cache.get(predLoc) == null) {
                     const key = predLoc.key()
@@ -180,6 +177,7 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
                     }
                 }
             }
+
         }
 
         const locsNotQuantifiedArray: CommitPath[] = []
@@ -199,24 +197,20 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
     async checkCache(localities: CommitPath[], quantifications: LocalityMap<CommitPath, SonarQubeMeasurement>)
         : Promise<boolean> {
 
-        let succeeded = true
         const measurements: SonarQubeMeasurement[] = []
         for (const cp of localities) {
             const measurement = await this.cache.get(cp)
             if (measurement == null) {
-                succeeded = false
-                return
+                return false
             }
             measurements.push(measurement)
         }
 
-        if (succeeded) {
-            for (let i = 0; i < localities.length; i++) {
-                quantifications.set(localities[i], measurements[i])
-            }
+        for (let i = 0; i < localities.length; i++) {
+            quantifications.set(localities[i], measurements[i])
         }
 
-        return succeeded
+        return true
     }
 
 }

@@ -1,5 +1,13 @@
-import {Measure, SonarQubeMeasurement} from "bugfinder-commitpath-quantifier-sonarqube";
-import _ from "underscore"
+import {SonarQubeMeasurement, SonarQubeMeasures} from "bugfinder-commitpath-quantifier-sonarqube";
+import {PredecessorMeasures} from "./Elements";
+import {
+    MaxDiffVisitor, MaxRelDiffVisitor,
+    MaxValVisitor, MeanDiffVisitor, MeanRelDiffVisitor, MeanValVisitor,
+    MinDiffVisitor,
+    MinRelDiffVisitor,
+    MinValVisitor,
+    Visitor
+} from "./Visitors";
 
 export class SonarQubePredecessorMeasurement {
 
@@ -9,98 +17,83 @@ export class SonarQubePredecessorMeasurement {
      * @param measurements
      */
     constructor(measurements: SonarQubeMeasurement[]) {
-        const visitors: Visitor<number>[] = [
-            new minValVisitor(),
-            new maxValVisitor()
-        ]
+        // @formatter:off
+        const minValVisitor         = new MinValVisitor()
+        const maxValVisitor         = new MaxValVisitor()
+        const meanValVisitor        = new MeanValVisitor()
+        const minDiffVisitor        = new MinDiffVisitor()
+        const maxDiffVisitor        = new MaxDiffVisitor()
+        const meanDiffVisitor       = new MeanDiffVisitor()
+        const minRelDiffVisitor     = new MinRelDiffVisitor()
+        const maxRelDiffVisitor     = new MaxRelDiffVisitor()
+        const meanRelDiffVisitor    = new MeanRelDiffVisitor()
+        // @formatter:on
 
-        const predMeasuresLines = new PredecessorMeasures<number>()
-        for(const measurement of measurements){
-            predMeasuresLines.measures.push(measurement.lines)
+        // @formatter:off
+        this.visitPredecessorMeasures(minValVisitor     , measurements, this.minVal)
+        this.visitPredecessorMeasures(maxValVisitor     , measurements, this.maxVal)
+        this.visitPredecessorMeasures(meanValVisitor    , measurements, this.meanVal)
+        this.visitPredecessorMeasures(minDiffVisitor    , measurements, this.minDiff)
+        this.visitPredecessorMeasures(maxDiffVisitor    , measurements, this.maxDiff)
+        this.visitPredecessorMeasures(meanDiffVisitor   , measurements, this.meanDiff)
+        this.visitPredecessorMeasures(minRelDiffVisitor , measurements, this.minRelDiff)
+        this.visitPredecessorMeasures(maxRelDiffVisitor , measurements, this.maxRelDiff)
+        this.visitPredecessorMeasures(meanRelDiffVisitor, measurements, this.meanRelDiff)
+        // @formatter:on
+    }
+
+    /**
+     * Writes SonarQubeMeasures with Visitor from measurements
+     * Visits a PredecessorMeasures with visitor and visitor writes result to result
+     * @param visitor
+     * @param measurements
+     * @param result
+     * @private
+     */
+    private visitPredecessorMeasures<T>(visitor: Visitor<number>, measurements: SonarQubeMeasurement[],
+                                        result: SonarQubeMeasures) {
+
+        const predMeasures = this.generatePredecessorMeasures(measurements)
+        let i = 0
+        for (const key in measurements[0].measures) {
+            predMeasures[i].accept(visitor, result[key])
+            i++
         }
+    }
 
-        for(const visitor of visitors){
-            predMeasuresLines.accept(visitor, this.lineMeasures)
+    /**
+     * Generates a PredecessorMeasures for each property in SonarQubeMeasures
+     * out of measurements: SonarQubeMeasurement[]
+     * @param measurements
+     * @private
+     */
+    private generatePredecessorMeasures(measurements: SonarQubeMeasurement[]): PredecessorMeasures<number>[] {
+
+        const predMeasures: PredecessorMeasures<number>[] = []
+        // for each SonarQubeMeasures-Property: f.e. cognitiveComplexity, classes, lines, ...
+        let i = 0
+        for (const key in measurements[0].measures) {
+            predMeasures[i] = new PredecessorMeasures<number>()
+
+            // push for each measurement the key: f.e. for 5 measurements push the cognitiveComplexity
+            // to predMeasures[cognitiveComplexity]
+            for (const measurement of measurements) {
+                predMeasures[i].measures.push(measurement.measures[key])
+            }
+            i++
         }
-
+        return predMeasures
     }
 
-    cognitiveComplexity = new Measure<number>()
-    duplicatedLinesDensity = new Measure<number>()
-    securityRating = new Measure<number>()
-    blockerViolations = new Measure<number>()
-    duplicatedBlocks = new Measure<number>()
-    vulnerabilities = new Measure<number>()
-    classes = new Measure<number>()
-    securityReviewRating = new Measure<number>()
-    functions = new Measure<number>()
-    sqaleIndex = new Measure<number>()
-    bugs = new Measure<number>()
-    infoViolations = new Measure<number>()
-    coverage = new Measure<number>()
-    generatedNcloc = new Measure<number>()
-    lines = new Measure<number>()
-    ncloc = new Measure<number>()
-    generatedLines = new Measure<number>()
-    linesToCover = new Measure<number>()
-    reopenedIssues = new Measure<number>()
-    confirmedIssues = new Measure<number>()
-    testSuccessDensity = new Measure<number>()
-    securityHotspots = new Measure<number>()
-    majorViolations = new Measure<number>()
-    violations = new Measure<number>()
-    uncoveredLines = new Measure<number>()
-    minorViolations = new Measure<number>()
-    criticalViolations = new Measure<number>()
-    falsePositiveIssues = new Measure<number>()
-    statements = new Measure<number>()
-    testFailures = new Measure<number>()
-    duplicatedFiles = new Measure<number>()
-    reliabilityRemediationEffort = new Measure<number>()
-    commentLinesDensity = new Measure<number>()
-    lineCoverage = new Measure<number>()
-    sqaleDebtRatio = new Measure<number>()
-    sqaleRating = new Measure<number>()
-    reliabilityRating = new Measure<number>()
-    files = new Measure<number>()
-    wontFixIssues = new Measure<number>()
-    skippedTests = new Measure<number>()
-    codeSmells = new Measure<number>()
-    effortToReachMaintainabilityRatingA = new Measure<number>()
-    complexity = new Measure<number>()
-    commentLines = new Measure<number>()
-    duplicatedLines = new Measure<number>()
-    securityRemediationEffort = new Measure<number>()
-    openIssues = new Measure<number>()
-    testErrors = new Measure<number>()
-}
-
-export interface Visitor<T> {
-    visit(element: Element<T>, result: Measure<T>)
-}
-
-export interface Element<T> {
-    accept(visitor: Visitor<T>, result: Measure<T>)
-}
-
-export class PredecessorMeasures<T> implements Element<T>{
-    measures: Measure<T>[]
-
-    accept(visitor: Visitor<T>, result: Measure<T>) {
-        visitor.visit(this, result)
-    }
-}
-
-export class minValVisitor implements Visitor<number> {
-    visit(element: PredecessorMeasures<number>, result: Measure<number>){
-        result.value = _.min(element.measures.map(el => {return el.value}))
-        result.name = "min_val_" + element[0].name
-    }
-}
-
-export class maxValVisitor implements Visitor<number> {
-    visit(element: PredecessorMeasures<number>, result: Measure<number>){
-        result.value = _.max(element.measures.map(el => {return el.value}))
-        result.name = "min_val_" + element[0].name
-    }
+    // @formatter:off
+    minVal:         SonarQubeMeasures = new SonarQubeMeasures()
+    maxVal:         SonarQubeMeasures = new SonarQubeMeasures()
+    meanVal:        SonarQubeMeasures = new SonarQubeMeasures()
+    minDiff:        SonarQubeMeasures = new SonarQubeMeasures()
+    maxDiff:        SonarQubeMeasures = new SonarQubeMeasures()
+    meanDiff:       SonarQubeMeasures = new SonarQubeMeasures()
+    minRelDiff:     SonarQubeMeasures = new SonarQubeMeasures()
+    maxRelDiff:     SonarQubeMeasures = new SonarQubeMeasures()
+    meanRelDiff:    SonarQubeMeasures = new SonarQubeMeasures()
+    // @formatter:on
 }

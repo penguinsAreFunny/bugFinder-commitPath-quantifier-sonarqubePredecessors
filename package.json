@@ -40,7 +40,7 @@
     "@types/node": "^15.12.2",
     "axios": "^0.21.0",
     "bugfinder-commitpath-db-mongodb": "^3.6.0",
-    "bugfinder-commitpath-quantifier-sonarqube": "^2.12.0",
+    "bugfinder-commitpath-quantifier-sonarqube": "^2.14.0",
     "bugfinder-framework": "^9.6.0",
     "bugfinder-framework-defaultcontainer": "^1.2.0",
     "bugfinder-localityrecorder-commit": "^2.0.2",
