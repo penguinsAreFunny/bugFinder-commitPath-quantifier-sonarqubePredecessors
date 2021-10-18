@@ -1,7 +1,7 @@
 import {CommitPath} from "bugfinder-localityrecorder-commitpath";
 import {DB, LocalityMap, SHARED_TYPES, WriteMode} from "bugfinder-framework";
 import {SonarQubeMeasurement} from "bugfinder-commitpath-quantifier-sonarqube";
-import {inject} from "inversify";
+import {inject, injectable, optional} from "inversify";
 import {BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES} from "../../TYPES";
 import {Logger} from "ts-log";
 
@@ -16,6 +16,7 @@ export interface Cache {
     get(locality: CommitPath): Promise<SonarQubeMeasurement>
 }
 
+@injectable()
 export class RAMCache implements Cache {
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.db)
     db: DB<CommitPath, any, SonarQubeMeasurement>;
@@ -23,7 +24,7 @@ export class RAMCache implements Cache {
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.cacheID)
     cacheID: string
 
-    @inject(SHARED_TYPES.logger)
+    @optional() @inject(SHARED_TYPES.logger)
     logger: Logger
 
     data: LocalityMap<CommitPath, SonarQubeMeasurement>
@@ -31,12 +32,6 @@ export class RAMCache implements Cache {
     async init() {
         this.logger?.info("Initializing Cache...")
         this.data = await this.db.readQuantifications(this.cacheID)
-
-        const match = this.data.toArray().filter(el => {
-            return el.key.commit.order == 17448
-        })
-        console.log("Match with order 17448: ")
-        match.forEach(el => { console.log(el.key.commit.order + " " + el.key.path.path)})
     }
 
     async get(locality: CommitPath): Promise<SonarQubeMeasurement> {
