@@ -5,10 +5,10 @@ const axios = require("axios");
 import {LocalityMap, Quantifier, SHARED_TYPES} from "bugfinder-framework";
 import {CommitPath, PredecessorsUnique} from "bugfinder-localityrecorder-commitpath"
 import {Logger} from "ts-log";
-import {Cache} from "./cache";
+import {Cache, RAMCache} from "./cache";
 import {BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES} from "../TYPES";
 import {SonarQubeMeasurement, SonarQubeQuantifier} from "bugfinder-commitpath-quantifier-sonarqube";
-import {SonarQubePredecessorMeasurement} from "./measurement/SonarQubePredecessorMeasurement";
+import {SonarQubePredecessorMeasurement} from "./measurement";
 
 @injectable()
 export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, SonarQubePredecessorMeasurement> {
@@ -16,7 +16,7 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
     logger: Logger
 
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.cache)
-    cache: Cache;
+    cache: Cache
 
     @inject(BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES.n)
     n: number
@@ -178,7 +178,8 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
         if (this.uniqueMode) {
             CommitPath.setPredecessorDelegation(new PredecessorsUnique(this.logger))
         }
-        return CommitPath.getNPredecessorsMap(localitiesToQuantify, this.n, this.upToN, allLocalities)
+        return CommitPath.getNPredecessorsMap(localitiesToQuantify, this.n, this.upToN,
+            this.uniqueMode, allLocalities)
     }
 
     private getNotQuantifiedLocs(localitiesToQuantify: CommitPath[],
