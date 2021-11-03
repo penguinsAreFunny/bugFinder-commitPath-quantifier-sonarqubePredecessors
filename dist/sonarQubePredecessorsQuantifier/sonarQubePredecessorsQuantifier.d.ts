@@ -3,7 +3,7 @@ import { CommitPath } from "bugfinder-localityrecorder-commitpath";
 import { Logger } from "ts-log";
 import { Cache } from "./cache";
 import { SonarQubeMeasurement, SonarQubeQuantifier } from "bugfinder-commitpath-quantifier-sonarqube";
-import { SonarQubePredecessorMeasurement } from "./measurement/SonarQubePredecessorMeasurement";
+import { SonarQubePredecessorMeasurement } from "./measurement";
 export declare class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, SonarQubePredecessorMeasurement> {
     logger: Logger;
     cache: Cache;

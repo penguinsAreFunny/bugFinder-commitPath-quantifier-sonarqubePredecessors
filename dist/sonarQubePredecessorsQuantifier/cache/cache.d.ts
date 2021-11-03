@@ -15,6 +15,7 @@ export declare class RAMCache implements Cache {
     cacheID: string;
     logger: Logger;
     data: LocalityMap<CommitPath, SonarQubeMeasurement>;
+    constructor();
     init(): Promise<void>;
     get(locality: CommitPath): Promise<SonarQubeMeasurement>;
     set(locality: CommitPath, measurement: SonarQubeMeasurement): Promise<void>;
