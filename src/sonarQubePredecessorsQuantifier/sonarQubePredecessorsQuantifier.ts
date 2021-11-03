@@ -5,7 +5,7 @@ const axios = require("axios");
 import {LocalityMap, Quantifier, SHARED_TYPES} from "bugfinder-framework";
 import {CommitPath, PredecessorsUnique} from "bugfinder-localityrecorder-commitpath"
 import {Logger} from "ts-log";
-import {Cache, RAMCache} from "./cache";
+import {Cache} from "./cache";
 import {BUGFINDER_COMMITPATH_QUANTIFIER_SONARQUBEPREDECESSORS_TYPES} from "../TYPES";
 import {SonarQubeMeasurement, SonarQubeQuantifier} from "bugfinder-commitpath-quantifier-sonarqube";
 import {SonarQubePredecessorMeasurement} from "./measurement";
