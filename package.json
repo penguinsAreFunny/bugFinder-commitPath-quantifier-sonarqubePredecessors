@@ -1,6 +1,6 @@
 {
   "name": "bugfinder-commitpath-quantifier-sonarqubepredecessors",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -43,7 +43,7 @@
     "bugfinder-framework": "^10.0.0",
     "bugfinder-framework-defaultcontainer": "^1.2.0",
     "bugfinder-localityrecorder-commit": "^2.0.2",
-    "bugfinder-localityrecorder-commitpath": "^1.20.0",
+    "bugfinder-localityrecorder-commitpath": "^1.23.4",
     "moment": "^2.29.1",
     "properties-reader": "^2.1.1",
     "request": "^2.88.2",
