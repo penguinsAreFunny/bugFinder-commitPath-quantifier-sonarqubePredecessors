@@ -44,6 +44,8 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
         this.logger?.info("SonarQubePredecessorsQuantifier starting...")
         await this.cache.init()
 
+
+
         // quantify localities not quantified already and write to cache.
         const nPredecessorsMap = this.getNPredecessorsMap(localitiesToQuantify, allLocalities)
         const notQuantifiedLocs = this.getNotQuantifiedLocs(localitiesToQuantify, nPredecessorsMap)
@@ -58,8 +60,6 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
 
         this.logger?.info("Quantifying all localities and their predecessors while using cache...")
 
-
-        // TODO: delete me
         let x = 0
         for (const el of (nPredecessorsMap.toArray())) {
             const predecessors = el.val
@@ -69,12 +69,11 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
                 const measurement = await this.cache.get(pred)
                 if (measurement == null) {
                     x++
-                    console.log("Not found in cache: ", pred.commit.order, " ", pred.path.path)
+                    this.logger?.debug("SonarQubePredecessorsQuantifier: Not found in cache: ", pred.commit.order, pred.path.path)
                 }
             }
         }
-        console.log("Total not found CPs: ", x)
-        // TODO: delete me bis hier hin
+        this.logger?.debug("SonarQubePredecessorsQuantifier: Total not found CPs: ", x)
 
         for (const el of (nPredecessorsMap.toArray())) {
             const predecessorsMeasurements = []
@@ -92,8 +91,8 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
                 let measurement: SonarQubeMeasurement = await this.cache.get(pred)
                 if (measurement == null) {
                     // retry quantification
-                    this.logger?.warn(`Missing quantification for locality ${pred.commit.hash} `
-                        + `${pred.path.path}. Retry quantification of locality`)
+                    this.logger?.info(`Quantification not found in cache for locality ${pred.commit.hash} `
+                        + `${pred.path.path}. Retrying quantification of locality...`)
                     const commit = [{hash: pred.commit.hash, localities: [pred], paths: [pred.path.path]}]
                     measurement = (await this.sonarQube.quantifyCommit(commit, 0, sonarQubeQuantifications))[0]
 
@@ -103,6 +102,7 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
                             `locality ${pred.commit.hash} ${pred.path.path}`)
                         continue
                     }
+                    await this.cache.set(pred, measurement)
                 }
                 predecessorsMeasurements.push(measurement)
             }
@@ -163,11 +163,11 @@ export class SonarQubePredecessorsQuantifier implements Quantifier<CommitPath, S
             }
             const measurements = await this.sonarQube.quantifyCommit(commits, i, quantifications)
 
-            commits[i].localities.forEach(locality => {
+            for(const locality of commits[i].localities) {
                 this.logger?.info(`Writing measurements for locality ${locality.commit.hash}` +
                     ` ${locality.path.path} to cache.`)
-                this.cache.set(locality, measurements[i])
-            })
+                await this.cache.set(locality, measurements[i])
+            }
         }
     }
 

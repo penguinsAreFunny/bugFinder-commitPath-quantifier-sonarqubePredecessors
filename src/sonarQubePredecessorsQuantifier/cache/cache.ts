@@ -30,7 +30,6 @@ export class RAMCache implements Cache {
     data: LocalityMap<CommitPath, SonarQubeMeasurement>
 
     constructor() {
-        console.log("TEST")
     }
 
     async init() {
@@ -47,7 +46,7 @@ export class RAMCache implements Cache {
         const tmpMap = new LocalityMap<CommitPath, SonarQubeMeasurement>()
         tmpMap.set(locality, measurement)
         if (el == null) {
-            await this.db.writeQuantifications(tmpMap, this.cacheID, WriteMode.append)
+            //await this.db.writeQuantifications(tmpMap, this.cacheID, WriteMode.append)
             this.data.set(locality, measurement)
         }
     }
